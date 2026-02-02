@@ -1,0 +1,45 @@
+version: 0.2
+
+env:
+  variables:
+    AWS_NUKE_VERSION: "v2.25.0"
+    CONFIG_S3_URI: "s3://REPLACE_ME_BUCKET/nuke-config.yml"
+    EXPECTED_ACCOUNT_ID: "111111111111"
+    NUKE_CONFIRM: "NO"
+
+phases:
+  install:
+    commands:
+      - set -euo pipefail
+      - curl -sSL -o aws-nuke "https://github.com/rebuy-de/aws-nuke/releases/download/${AWS_NUKE_VERSION}/aws-nuke-linux-amd64"
+      - chmod +x aws-nuke
+      - mv aws-nuke /usr/local/bin/aws-nuke
+
+  pre_build:
+    commands:
+      - set -euo pipefail
+      - aws sts get-caller-identity
+      - ACTUAL_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+      - |
+        if [ "$ACTUAL_ACCOUNT_ID" != "$EXPECTED_ACCOUNT_ID" ]; then
+          echo "Refusing: running in account $ACTUAL_ACCOUNT_ID (expected $EXPECTED_ACCOUNT_ID)"
+          exit 1
+        fi
+      - aws s3 cp "$CONFIG_S3_URI" ./nuke-config.yml
+      - |
+        if [ "$NUKE_CONFIRM" != "YES" ]; then
+          echo "NUKE_CONFIRM != YES => DRY RUN"
+          export DRYRUN="true"
+        else
+          export DRYRUN="false"
+        fi
+
+  build:
+    commands:
+      - set -euo pipefail
+      - |
+        if [ "$DRYRUN" = "true" ]; then
+          aws-nuke run --config ./nuke-config.yml
+        else
+          aws-nuke run --config ./nuke-config.yml --no-dry-run --force
+        fi

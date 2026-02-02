@@ -1,0 +1,47 @@
+regions:
+  - global
+  - eu-central-1
+  - eu-west-1
+
+account-blocklist:
+  - "999999999999" # put prod / break-glass accounts here
+
+accounts:
+  "111111111111": # target account to nuke
+    filters:
+      # Protect runner infra by tag
+      S3Bucket:
+        - property: "tag:nuke-protect"
+          value: "true"
+        - property: "Name"
+          value: "nuke-runner-*"
+
+      CodeBuildProject:
+        - property: "tag:nuke-protect"
+          value: "true"
+        - property: "Name"
+          value: "nuke-runner-*"
+
+      EventsRule:
+        - property: "tag:nuke-protect"
+          value: "true"
+        - property: "Name"
+          value: "nuke-runner-*"
+
+      IAMRole:
+        - property: "tag:nuke-protect"
+          value: "true"
+        - property: "Name"
+          value: "nuke-runner-*"
+
+      IAMPolicy:
+        - property: "tag:nuke-protect"
+          value: "true"
+        - property: "Name"
+          value: "nuke-runner-*"
+
+      CloudWatchLogsLogGroup:
+        - property: "tag:nuke-protect"
+          value: "true"
+        - property: "Name"
+          value: "/codebuild/nuke-runner*"
